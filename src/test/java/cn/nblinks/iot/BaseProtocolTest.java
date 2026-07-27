@@ -1,11 +1,15 @@
 package cn.nblinks.iot;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import cn.nblinks.iot.constants.PROTOCOLS;
 import cn.nblinks.iot.dataform.SendMessageForm;
 import cn.nblinks.iot.dataform.encode.Snd0x08EncodeForm;
+import cn.nblinks.iot.utils.ByteUtil;
 import cn.nblinks.teask.gateway.DeviceRegistry;
 
 public class BaseProtocolTest {
@@ -33,5 +37,22 @@ public class BaseProtocolTest {
         String actual = BaseProtocol.enCode(sendForm);
 
         assertEquals(GOLDEN_FRAME_SND_0x08_START, actual);
+    }
+
+    @Test
+    public void isPingMsgAcceptsPingFrame() {
+        byte[] receivedData = ByteUtil.hexStr2bytes(PROTOCOLS.PING);
+        assertTrue(BaseProtocol.isPingMsg(receivedData));
+    }
+
+    @Test
+    public void isPingMsgRejectsNonPingFrame() {
+        String[] nonPingFrames = {"FE00", "FE000000", "FE0001"};
+
+        for (String frame : nonPingFrames) {
+            assertFalse(BaseProtocol.isPingMsg(
+                ByteUtil.hexStr2bytes(frame)
+            ));
+        }
     }
 }
