@@ -17,6 +17,8 @@ public class BaseProtocolTest {
     private static final int DEVICE_ID = 10000064;
     private static final String GOLDEN_FRAME_REC_0x01_LOGIN 
         = "FE002E0001000100100000640A0100544541534b2d53494d0000000000000000000000000000000000000000000DAC8090";
+    private static final String GOLDEN_FRAME_REC_0x0D_START_REP
+        = "FE001A0002000D000000019F1BDDD164030001F46553F10000000088BD";
     private static final String GOLDEN_FRAME_SND_0x08_START = "FE001400010008000000019F1BDDD164030001F40092D3";
 
     @Test
@@ -49,6 +51,30 @@ public class BaseProtocolTest {
         String actual = BaseProtocol.enCode(sendForm);
 
         assertEquals(GOLDEN_FRAME_REC_0x01_LOGIN, actual);
+    }
+
+    @Test
+    public void encodeRec0x0DStartRepProducesGoldenFrame() {
+        StringBuilder data = new StringBuilder();
+        data.append(GOLDEN_FRAME_SND_0x08_START.substring(14, 32)); // Flow number
+        data.append(ByteUtil.decimal2fitHex(3, 2)); // Slot number
+        data.append(ByteUtil.decimal2fitHex(0, 2)); // Charge type
+        data.append(ByteUtil.decimal2fitHex(500, 4)); // Money
+        data.append(GOLDEN_FRAME_REC_0x0D_START_REP.substring(40, 48)); // Start time
+        data.append(ByteUtil.decimal2fitHex(0, 4));
+        data.append(ByteUtil.decimal2fitHex(0, 2));
+
+        SendMessageForm sendForm = new SendMessageForm();
+
+        sendForm.setDeviceId(DEVICE_ID);
+        sendForm.setSubDeviceId(null);
+        sendForm.setSerialNo(2);
+        sendForm.setCmd(CMD.REC_0x0D_START_CHARGE_REPORT);
+        sendForm.setData(data.toString());
+
+        String actual = BaseProtocol.enCode(sendForm);
+
+        assertEquals(GOLDEN_FRAME_REC_0x0D_START_REP, actual);
     }
 
     @Test
