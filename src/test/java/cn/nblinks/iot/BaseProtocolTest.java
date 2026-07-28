@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import cn.nblinks.iot.constants.CMD;
 import cn.nblinks.iot.constants.PROTOCOLS;
+import cn.nblinks.iot.dataform.BaseMessageForm;
 import cn.nblinks.iot.dataform.SendMessageForm;
 import cn.nblinks.iot.dataform.encode.Snd0x08EncodeForm;
 import cn.nblinks.iot.utils.ByteUtil;
@@ -82,7 +83,7 @@ public class BaseProtocolTest {
         Snd0x08EncodeForm cmd = new Snd0x08EncodeForm(
             DEVICE_ID, // deviceId
             null, // mainDeviceId
-            DeviceRegistry.get().nextSerial(DEVICE_ID), // serialNo
+            1, // serialNo
             3, // slotNo
             0, // chargeType
             GOLDEN_FRAME_SND_0x08_START.substring(14, 32), // flowNo
@@ -98,6 +99,41 @@ public class BaseProtocolTest {
         String actual = BaseProtocol.enCode(sendForm);
 
         assertEquals(GOLDEN_FRAME_SND_0x08_START, actual);
+    }
+
+    @Test
+    public void roundTripSnd0x08StartPreservesBaseMessageFormFields() throws Exception {
+        Snd0x08EncodeForm cmd = new Snd0x08EncodeForm(
+            DEVICE_ID, // deviceId
+            null, // mainDeviceId
+            1, // serialNo
+            3, // slotNo
+            0, // chargeType
+            GOLDEN_FRAME_SND_0x08_START.substring(14, 32), // flowNo
+            500, // money
+            null, // chargeScheme
+            "", // cardNo
+            0, // count
+            0 // cardBalance
+        );
+
+        SendMessageForm sendForm = new SendMessageForm(cmd);
+
+        BaseMessageForm expected = new BaseMessageForm(
+            cmd.getDeviceId(),
+            cmd.getSerialNo(),
+            cmd.getMainDeviceId(),
+            cmd.getCmd(),
+            cmd.getData()
+        );
+
+
+        BaseMessageForm actual = BaseProtocol.decode(
+            DEVICE_ID,
+            ByteUtil.hexStr2bytes(BaseProtocol.enCode(sendForm))
+        );
+
+        assertEquals(expected, actual);
     }
 
     @Test
