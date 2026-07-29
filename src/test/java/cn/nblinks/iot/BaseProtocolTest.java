@@ -12,6 +12,7 @@ import cn.nblinks.iot.dataform.BaseMessageForm;
 import cn.nblinks.iot.dataform.SendMessageForm;
 import cn.nblinks.iot.dataform.encode.Snd0x02EncodeForm;
 import cn.nblinks.iot.dataform.encode.Snd0x08EncodeForm;
+import cn.nblinks.iot.dataform.encode.Snd0x14EncodeForm;
 import cn.nblinks.iot.utils.ByteUtil;
 
 public class BaseProtocolTest {
@@ -30,6 +31,9 @@ public class BaseProtocolTest {
 
     private static final String GOLDEN_FRAME_SND_0x08_START
         = "FE001400010008000000019F1BDDD164030001F40092D3";
+
+    private static final String GOLDEN_FRAME_SND_0X14_STOP
+        = "FE00070002001403540E";
 
     @Test
     public void encodeRec0x01LoginProducesGoldenFrame() {
@@ -162,6 +166,22 @@ public class BaseProtocolTest {
         String actual = BaseProtocol.enCode(sendForm);
 
         assertEquals(GOLDEN_FRAME_SND_0x08_START, actual);
+    }
+
+    @Test
+    public void encodeSnd0x14StopProducesGoldenFrame() {
+        Snd0x14EncodeForm cmd = new Snd0x14EncodeForm(
+            DEVICE_ID, // deviceId
+            null, // mainDeviceId
+            2, // serialNo
+            3 // slotNo
+        );
+
+        SendMessageForm sendForm = new SendMessageForm(cmd);
+
+        String actual = BaseProtocol.enCode(sendForm);
+
+        assertEquals(GOLDEN_FRAME_SND_0X14_STOP, actual);
     }
 
     @Test
