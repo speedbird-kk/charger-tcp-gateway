@@ -5,6 +5,7 @@ import cn.nblinks.iot.constants.CMD;
 import cn.nblinks.iot.dataform.BaseMessageForm;
 import cn.nblinks.iot.dataform.SendMessageForm;
 import cn.nblinks.iot.utils.ByteUtil;
+import cn.nblinks.teask.constants.Status;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -120,9 +121,28 @@ public final class ChargerSimulator {
 
             case CMD.SND_0x14_STOP_CHARGE: {
                 int slotNo = ByteUtil.hexStr2Int(form.getData().substring(0, 2));
-                System.out.println("[sim] STOP received for slot " + slotNo);
-                // A real device would end the active order; emit a completion.
-                worker.submit(() -> sendOrderEnd(lastFlowNo, slotNo, lastBudget, lastBudget / 2));
+
+                Session sessionToStop = sessions.get(slotNo);
+
+                if (sessionToStop == null
+                    || !sessionToStop.geStatus().equals(Status.CHARGING)) {
+
+                    System.out.println(
+                        "[sim] STOP ignored - no active charging session for slot " + slotNo);
+                } else {
+                    System.out.println("[sim] STOP received for slot " + slotNo);
+
+                    // A real device would end the active order; emit a completion.
+                    worker.submit(() -> sendOrderEnd(
+                        sessionToStop.getFlowNo(),
+                        slotNo,
+                        sessionToStop.getBudget(),
+                        sessionToStop.getBudget() / 2
+                    ));
+
+                    sessions.remove(slotNo);
+                }
+
                 break;
             }
 
