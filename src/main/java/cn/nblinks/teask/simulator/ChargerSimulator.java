@@ -134,6 +134,8 @@ public final class ChargerSimulator {
     private volatile String lastFlowNo = "000000000000000000";
     private volatile int lastBudget = 0;
 
+    private static final long CHARGE_DURATION_MS = 15_000;
+
     private void runChargeSession(String flowNo, int slotNo, int budget) {
         try {
             this.lastFlowNo = flowNo;
@@ -144,7 +146,7 @@ public final class ChargerSimulator {
             System.out.println("[sim] charging... (0x0D sent)");
 
             // Simulate a short charge, then the battery reaches full.
-            Thread.sleep(3000);
+            Thread.sleep(CHARGE_DURATION_MS);
 
             int consumed = budget; // used the full budget in this simulated session
             sendOrderEnd(flowNo, slotNo, budget, consumed);
