@@ -9,6 +9,8 @@ import cn.nblinks.iot.utils.ByteUtil;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -131,15 +133,13 @@ public final class ChargerSimulator {
 
     // ── charge session simulation ─────────────────────────────────────────────
 
-    private volatile String lastFlowNo = "000000000000000000";
-    private volatile int lastBudget = 0;
+    private final Map<Integer, Session> sessions = new ConcurrentHashMap<>();
 
     private static final long CHARGE_DURATION_MS = 15_000;
 
     private void runChargeSession(String flowNo, int slotNo, int budget) {
         try {
-            this.lastFlowNo = flowNo;
-            this.lastBudget = budget;
+            sessions.put(slotNo, new Session(flowNo, budget));
 
             // Confirm the socket energized.
             sendFrame(CMD.REC_0x0D_START_CHARGE_REPORT, nextSerial(), buildStartReport(flowNo, slotNo, budget));
