@@ -42,7 +42,13 @@ public class Session {
         return startTime;
     }
 
-    public Status geStatus() {
+    public Status getStatus() {
         return status;
+    }
+
+    // -- setters ----------------------------------
+
+    public void setStatus(Status status) {
+        this.status = status;
     }
 }

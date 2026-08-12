@@ -33,7 +33,7 @@ public final class ChargerSimulator {
     private final int deviceId;
     private final String host;
     private final int port;
-    private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private final ExecutorService worker = Executors.newCachedThreadPool();
 
     private OutputStream out;
     private volatile int serial = 0;
@@ -125,11 +125,13 @@ public final class ChargerSimulator {
                 Session sessionToStop = sessions.get(slotNo);
 
                 if (sessionToStop == null
-                    || !sessionToStop.geStatus().equals(Status.CHARGING)) {
+                    || !sessionToStop.getStatus().equals(Status.CHARGING)) {
 
                     System.out.println(
                         "[sim] STOP ignored - no active charging session for slot " + slotNo);
                 } else {
+                    sessionToStop.setStatus(Status.STOPPED);
+
                     System.out.println("[sim] STOP received for slot " + slotNo);
 
                     // A real device would end the active order; emit a completion.
@@ -168,9 +170,18 @@ public final class ChargerSimulator {
             // Simulate a short charge, then the battery reaches full.
             Thread.sleep(CHARGE_DURATION_MS);
 
+            sessions.get(slotNo).setStatus(Status.COMPLETED);
+
             int consumed = budget; // used the full budget in this simulated session
             sendOrderEnd(flowNo, slotNo, budget, consumed);
-            System.out.println("[sim] battery full — order complete (0x11 sent, consumed=" + consumed + ")");
+
+            System.out.println(
+                "[sim] battery full — order complete (0x11 sent, slot="
+                + slotNo
+                + "consumed="
+                + consumed
+                + ")"
+            );
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
@@ -180,6 +191,8 @@ public final class ChargerSimulator {
 
     private void sendOrderEnd(String flowNo, int slotNo, int budget, int consumed) {
         try {
+            sessions.remove(slotNo);
+
             sendFrame(CMD.REC_0x11_ORDER_END_REPORT, nextSerial(),
                     buildOrderEnd(flowNo, slotNo, budget, consumed));
         } catch (Exception e) {
