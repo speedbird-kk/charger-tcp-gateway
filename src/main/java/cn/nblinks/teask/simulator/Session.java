@@ -17,8 +17,8 @@ public class Session {
      * to the current time of instantiation and the {@code status} is initialised
      * as {@code Status.CHARGING}.
      * 
-     * @param flowNo the flow number
-     * @param budget the budget for the charge
+     * @param flowNo the flow number.
+     * @param budget the budget for the charging session.
      */
     public Session(String flowNo, int budget) {
         this.flowNo = flowNo;

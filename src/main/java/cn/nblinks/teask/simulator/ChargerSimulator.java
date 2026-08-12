@@ -161,7 +161,8 @@ public final class ChargerSimulator {
 
     private void runChargeSession(String flowNo, int slotNo, int budget) {
         try {
-            sessions.put(slotNo, new Session(flowNo, budget));
+            Session session = new Session(flowNo, budget);
+            sessions.putIfAbsent(slotNo, session);
 
             // Confirm the socket energized.
             sendFrame(CMD.REC_0x0D_START_CHARGE_REPORT, nextSerial(), buildStartReport(flowNo, slotNo, budget));
@@ -170,7 +171,7 @@ public final class ChargerSimulator {
             // Simulate a short charge, then the battery reaches full.
             Thread.sleep(CHARGE_DURATION_MS);
 
-            sessions.get(slotNo).setStatus(Status.COMPLETED);
+            session.setStatus(Status.COMPLETED);
 
             int consumed = budget; // used the full budget in this simulated session
             sendOrderEnd(flowNo, slotNo, budget, consumed);
@@ -178,7 +179,7 @@ public final class ChargerSimulator {
             System.out.println(
                 "[sim] battery full — order complete (0x11 sent, slot="
                 + slotNo
-                + "consumed="
+                + ", consumed="
                 + consumed
                 + ")"
             );
