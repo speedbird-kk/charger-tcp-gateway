@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -115,7 +116,14 @@ public final class ChargerSimulator {
                 int slotNo    = ByteUtil.hexStr2Int(form.getData().substring(18, 20));
                 int money     = ByteUtil.hexStr2Int(form.getData().substring(22, 26));
                 System.out.printf("[sim] START received: slot=%d budget=%d flowNo=%s%n", slotNo, money, flowNo);
-                worker.submit(() -> runChargeSession(flowNo, slotNo, money));
+
+                Session session = new Session(flowNo, money);
+                
+                Future<?> workerFuture = worker.submit(() -> runChargeSession(slotNo, session));
+
+                session.setStatus(Status.CHARGING);
+                session.setWorker(workerFuture);
+
                 break;
             }
 
@@ -142,6 +150,9 @@ public final class ChargerSimulator {
                         sessionToStop.getBudget() / 2
                     ));
 
+                    // Stop the execution of the worker of the session to stop.
+                    sessionToStop.stopSession();
+
                     sessions.remove(slotNo);
                 }
 
@@ -159,13 +170,17 @@ public final class ChargerSimulator {
 
     private static final long CHARGE_DURATION_MS = 15_000;
 
-    private void runChargeSession(String flowNo, int slotNo, int budget) {
+    private void runChargeSession(int slotNo, Session session) {
         try {
-            Session session = new Session(flowNo, budget);
             sessions.putIfAbsent(slotNo, session);
 
             // Confirm the socket energized.
-            sendFrame(CMD.REC_0x0D_START_CHARGE_REPORT, nextSerial(), buildStartReport(flowNo, slotNo, budget));
+            sendFrame(
+                CMD.REC_0x0D_START_CHARGE_REPORT,
+                nextSerial(),
+                buildStartReport(session.getFlowNo(), slotNo, session.getBudget())
+            );
+
             System.out.println("[sim] charging... (0x0D sent)");
 
             // Simulate a short charge, then the battery reaches full.
@@ -173,8 +188,8 @@ public final class ChargerSimulator {
 
             session.setStatus(Status.COMPLETED);
 
-            int consumed = budget; // used the full budget in this simulated session
-            sendOrderEnd(flowNo, slotNo, budget, consumed);
+            int consumed = session.getBudget(); // used the full budget in this simulated session
+            sendOrderEnd(session.getFlowNo(), slotNo, session.getBudget(), consumed);
 
             System.out.println(
                 "[sim] battery full — order complete (0x11 sent, slot="
